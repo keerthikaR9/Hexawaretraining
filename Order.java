@@ -17,9 +17,27 @@ public class Order {
         this.orderID = orderID;
         this.customer = customer;
         this.orderDate = orderDate;
-        this.totalAmount = totalAmount; // Initially 0, calculated when items are added
-        this.status = "Processing";
+        setTotalAmount(totalAmount); // Use setter for validation
+        setStatus("Processing"); // Default status
         this.orderDetails = new ArrayList<>();
+    }
+
+    // Setter for totalAmount with validation
+    public void setTotalAmount(double totalAmount) {
+        if (totalAmount >= 0) {
+            this.totalAmount = totalAmount;
+        } else {
+            System.out.println("Total amount cannot be negative.");
+        }
+    }
+
+    // Setter for status with validation
+    public void setStatus(String status) {
+        if (status.equals("Processing") || status.equals("Shipped") || status.equals("Cancelled")) {
+            this.status = status;
+        } else {
+            System.out.println("Invalid order status. Allowed values: Processing, Shipped, Cancelled.");
+        }
     }
 
     // Method to add an order detail
@@ -38,10 +56,8 @@ public class Order {
         for (OrderDetail detail : orderDetails) {
             total += detail.getSubtotal(); // Use the getter method
         }
-        this.totalAmount = total;
+        setTotalAmount(total); // Use setter for validation
     }
-
-
 
     // Method to get order details
     public void getOrderDetails() {
@@ -64,12 +80,8 @@ public class Order {
 
     // Method to update order status
     public void updateOrderStatus(String newStatus) {
-        if (newStatus != null && !newStatus.trim().isEmpty()) {
-            this.status = newStatus;
-            System.out.println("Order Status Updated: " + newStatus);
-        } else {
-            System.out.println("Invalid status update.");
-        }
+        setStatus(newStatus); // Use setter to ensure validation
+        System.out.println("Order Status Updated: " + this.status);
     }
 
     // Method to cancel an order and restock inventory
@@ -90,7 +102,7 @@ public class Order {
         }
 
         // Update order status
-        this.status = "Cancelled";
+        setStatus("Cancelled");
         System.out.println("Order ID: " + this.orderID + " has been cancelled. Inventory updated.");
     }
 
@@ -119,5 +131,6 @@ public class Order {
         return orderDetails;
     }
 }
+
 
 

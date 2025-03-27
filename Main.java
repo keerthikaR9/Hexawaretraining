@@ -5,7 +5,7 @@ import java.util.Date;
 public class Main {
     public static void main(String[] args) {
         // Creating a customer
-        Customer customer1 = new Customer(15, "Praveen", "Kumar", "praveen25@gmail.com", "987456321", "Kalpakkam,chennai");
+        Customer customer1 = new Customer(15, "Praveen", "Kumar", "praveen25@gmail.com", "987456321", "Kalpakkam, Chennai");
 
         // Displaying customer details
         System.out.println("===== Customer Details =====");
@@ -29,29 +29,32 @@ public class Main {
         inventory1.displayInventoryDetails();
         inventory2.displayInventoryDetails();
 
-        // Creating an order
-        Order order1 = new Order(401, customer1, new Date(), 1700.00);
+        // Creating an order (without total amount yet)
+        Order order1 = new Order(401, customer1, new Date(), 0.00); // Initialize with 0
 
-        // Creating order details
-        OrderDetail orderDetail1 = new OrderDetail(501, order1, product1, 2);
-        OrderDetail orderDetail2 = new OrderDetail(502, order1, product2, 1);
+        // Creating order details (with stock check)
+        if (inventory1.isProductAvailable(2)) {
+            OrderDetail orderDetail1 = new OrderDetail(501, order1, product1, 2);
+            inventory1.removeFromInventory(orderDetail1.getQuantity()); // Reduce stock dynamically
+        } else {
+            System.out.println("\n⚠ Not enough stock for " + product1.getProductName());
+        }
+
+        if (inventory2.isProductAvailable(1)) {
+            OrderDetail orderDetail2 = new OrderDetail(502, order1, product2, 1);
+            inventory2.removeFromInventory(orderDetail2.getQuantity()); // Reduce stock dynamically
+        } else {
+            System.out.println("\n⚠ Not enough stock for " + product2.getProductName());
+        }
 
         // Displaying order details
         System.out.println("\n===== Order Details =====");
         order1.getOrderDetails();
 
-        System.out.println("\n===== Order Detail Information =====");
-        orderDetail1.getOrderDetailInfo();
-        orderDetail2.getOrderDetailInfo();
-
         // Updating order status
         order1.updateOrderStatus("Shipped");
         System.out.println("\nUpdated Order Status:");
         order1.getOrderDetails();
-
-        // Reducing stock after purchase
-        inventory1.removeFromInventory(2);
-        inventory2.removeFromInventory(1);
 
         // Display updated inventory
         System.out.println("\n===== Updated Inventory After Purchase =====");
@@ -59,3 +62,4 @@ public class Main {
         inventory2.displayInventoryDetails();
     }
 }
+

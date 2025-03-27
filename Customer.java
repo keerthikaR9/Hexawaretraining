@@ -14,14 +14,64 @@ public class Customer {
         this.customerID = customerID;
         this.firstName = firstName;
         this.lastName = lastName;
-        this.email = email;
-        this.phone = phone;
+        setEmail(email);
+        setPhone(phone);
         this.address = address;
         this.totalOrders = 0;
     }
-    // Calculate total orders
-    public int calculateTotalOrders() {
+
+    // Getters
+    public int getCustomerID() {
+        return customerID;
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public int getTotalOrders() {
         return totalOrders;
+    }
+
+    // Setters with validation
+    public void setEmail(String email) {
+        if (email.contains("@")) {
+            this.email = email;
+        } else {
+            System.out.println("Invalid email format.");
+        }
+    }
+
+    public void setPhone(String phone) {
+        if (phone.length() == 10 && phone.matches("\\d+")) {
+            this.phone = phone;
+        } else {
+            System.out.println("Phone number must be 10 digits.");
+        }
+    }
+
+    public void setAddress(String address) {
+        if (!address.isEmpty()) {
+            this.address = address;
+        } else {
+            System.out.println("Address cannot be empty.");
+        }
     }
 
     // Method to display customer details
@@ -33,22 +83,18 @@ public class Customer {
         System.out.println("Address: " + address);
         System.out.println("Total Orders: " + totalOrders);
     }
-    public String getFirstName() {
-        return firstName;
-    }
-
-    public String getLastName() {
-        return lastName;
-    }
 
     // Method to update customer info
     public void updateCustomerInfo(String newEmail, String newPhone, String newAddress) {
-        this.email = newEmail;
-        this.phone = newPhone;
-        this.address = newAddress;
+        setEmail(newEmail);
+        setPhone(newPhone);
+        setAddress(newAddress);
     }
+
+    // Increment total orders
     public void placeOrder() {
         totalOrders++;
     }
 }
+
 

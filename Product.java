@@ -12,33 +12,54 @@ public class Product {
         this.productID = productID;
         this.productName = productName;
         this.description = description;
-        this.price = price;
-        this.inStock = inStock;
+        setPrice(price);
+        setStockQuantity(inStock);
     }
 
-    // Getter for Product ID
+    // Getters
     public int getProductID() {
         return productID;
     }
 
-    // Getter for Product Name
     public String getProductName() {
         return productName;
     }
 
-    // Getter for Description
     public String getDescription() {
         return description;
     }
 
-    // Getter for Price
     public double getPrice() {
         return price;
     }
 
-    // Getter for Stock Quantity
     public int getStockQuantity() {
         return inStock;
+    }
+
+    // Setters with validation
+    public void setPrice(double price) {
+        if (price >= 0) {
+            this.price = price;
+        } else {
+            System.out.println("Price cannot be negative.");
+        }
+    }
+
+    public void setStockQuantity(int inStock) {
+        if (inStock >= 0) {
+            this.inStock = inStock;
+        } else {
+            System.out.println("Stock quantity cannot be negative.");
+        }
+    }
+
+    public void setDescription(String description) {
+        if (!description.isEmpty()) {
+            this.description = description;
+        } else {
+            System.out.println("Description cannot be empty.");
+        }
     }
 
     // Method to get product details
@@ -50,8 +71,8 @@ public class Product {
 
     // Method to update product details
     public void updateProductInfo(double price, String description) {
-        this.price = price;
-        this.description = description;
+        setPrice(price);
+        setDescription(description);
     }
 
     // Method to check stock availability
@@ -61,18 +82,23 @@ public class Product {
 
     // Reduce stock when a product is purchased
     public boolean reduceStock(int quantity) {
-        if (quantity <= inStock) {
+        if (quantity > 0 && quantity <= inStock) {
             inStock -= quantity;
             return true; // Successfully reduced stock
         } else {
-            System.out.println("Not enough stock available.");
+            System.out.println("Invalid stock quantity or not enough stock available.");
             return false; // Stock not sufficient
         }
     }
 
     // Add stock when restocking or canceling an order
     public void addStock(int quantity) {
-        inStock += quantity;
+        if (quantity > 0) {
+            inStock += quantity;
+        } else {
+            System.out.println("Stock addition must be positive.");
+        }
     }
 }
+
 

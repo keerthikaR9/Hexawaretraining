@@ -12,7 +12,7 @@ public class Inventory {
     public Inventory(int inventoryID, Product product, int quantityInStock) {
         this.inventoryID = inventoryID;
         this.product = product;
-        this.quantityInStock = quantityInStock;
+        setQuantityInStock(quantityInStock); // Use setter for validation
         this.lastStockUpdate = new Date(); // Set current date
     }
 
@@ -26,26 +26,32 @@ public class Inventory {
         return quantityInStock;
     }
 
+    // Setter for stock quantity with validation
+    private void setQuantityInStock(int quantityInStock) {
+        if (quantityInStock >= 0) {
+            this.quantityInStock = quantityInStock;
+            this.lastStockUpdate = new Date(); // Update timestamp
+        } else {
+            System.out.println("Stock quantity cannot be negative.");
+        }
+    }
+
     // Add stock to inventory
     public void addToInventory(int quantity) {
-        this.quantityInStock += quantity;
-        this.lastStockUpdate = new Date();
+        if (quantity > 0) {
+            setQuantityInStock(this.quantityInStock + quantity);
+        } else {
+            System.out.println("Invalid quantity. Must be greater than 0.");
+        }
     }
 
     // Remove stock from inventory
     public void removeFromInventory(int quantity) {
-        if (quantity <= quantityInStock) {
-            this.quantityInStock -= quantity;
-            this.lastStockUpdate = new Date();
+        if (quantity > 0 && quantity <= quantityInStock) {
+            setQuantityInStock(this.quantityInStock - quantity);
         } else {
-            System.out.println("Not enough stock available.");
+            System.out.println("Invalid operation. Not enough stock or invalid quantity.");
         }
-    }
-
-    // Update stock quantity
-    public void updateStockQuantity(int newQuantity) {
-        this.quantityInStock = newQuantity;
-        this.lastStockUpdate = new Date();
     }
 
     // Check product availability
@@ -104,6 +110,7 @@ public class Inventory {
         }
     }
 }
+
 
 
 
