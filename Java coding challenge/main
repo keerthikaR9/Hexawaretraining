@@ -1,15 +1,22 @@
 package Main;
 
-import entity.*;
+import java.time.LocalDate;
+import java.util.InputMismatchException;
+import java.util.List;
+import java.util.Scanner;
+
+import dao.AdoptionEventDAO;
+import entity.CashDonation;
+import entity.Cat;
+import entity.Dog;
+import entity.HumanParticipant;
+import entity.IAdoptable;
+import entity.ItemDonation;
+import entity.PetShelter;
 import exception.InsufficientFundsException;
 import exception.InvalidPetAgeException;
 import exception.InvalidPetDataException;
 import util.LoggerUtil;
-import dao.PetDAO;
-import entity.Pet;
-import java.time.LocalDate;
-import java.util.InputMismatchException;
-import java.util.Scanner;
 
 public class MainModule {
 
@@ -17,151 +24,159 @@ public class MainModule {
         Scanner scanner = new Scanner(System.in);
         PetShelter shelter = new PetShelter();
 
-        System.out.println(" Welcome to kiki's PetPals - The NO 1 Pet Adoption Platform ");
+        System.out.println(" Welcome to Kiki's PetPals - The #1 Pet Adoption Platform ");
 
         boolean exit = false;
 
         while (!exit) {
-            System.out.println("\n========= MENU =========");
-            System.out.println("1. Add Pet");
-            System.out.println("2. List Available Pets");
-            System.out.println("3. Adopt a Pet");
-            System.out.println("4. Make a Cash Donation");
-            System.out.println("5. Exit");
-            System.out.print("Enter your choice (1-5): ");
+            printMenu();
 
             int choice;
-
             try {
                 choice = scanner.nextInt();
-                scanner.nextLine(); 
+                scanner.nextLine(); // consume newline
             } catch (InputMismatchException e) {
-                System.out.println("❌ Invalid input. Please enter a number between 1 and 4.");
+                System.out.println("❌ Invalid input. Please enter a number between 1 and 7.");
                 scanner.nextLine();
                 continue;
             }
 
             switch (choice) {
-                case 1:
-                    System.out.print("Enter pet type (dog/cat): ");
-                    String type = scanner.nextLine().trim().toLowerCase();
-
-                    
-                    String name = scanner.nextLine();
-                    while (true) {
-                        try {
-                            System.out.print("Enter pet name: ");
-                            name = scanner.nextLine().trim();
-                            if (name.isEmpty()) {
-                                throw new InvalidPetDataException(" Pet name cannot be empty.");
-                            }
-                            break;
-                        } catch (InvalidPetDataException e) {
-                            System.out.println(e.getMessage());
-                        }
-                    }
-
-                    int age;
-                    while (true) {
-                        try {
-                            System.out.print("Enter pet age (positive integer): ");
-                            age = scanner.nextInt();
-                            scanner.nextLine(); 
-                            if (age <= 0) {
-                                throw new InvalidPetAgeException(" Age must be a positive number.");
-                            }
-                            break;
-                        } catch (InputMismatchException e) {
-                            System.out.println(" Please enter a valid number.");
-                            scanner.nextLine(); 
-                        } catch (InvalidPetAgeException e) {
-                            System.out.println(e.getMessage());
-                        }
-                    }
-
-
-                    System.out.print("Enter breed: ");
-                    String breed = scanner.nextLine();
-                    while (true) {
-                        try {
-                            System.out.print("Enter breed: ");
-                            breed = scanner.nextLine().trim();
-                            if (breed.isEmpty()) {
-                                throw new InvalidPetDataException(" Breed cannot be empty.");
-                            }
-                            break;
-                        } catch (InvalidPetDataException e) {
-                            System.out.println(e.getMessage());
-                        }
-                    }
-
-                    if (type.equalsIgnoreCase("dog")) {
-                        System.out.print("Enter specific dog breed: ");
-                        String dogBreed = scanner.nextLine();
-
-                        Dog dog = new Dog(0, name, age, breed, dogBreed); // petID = 0 for now
-                        shelter.addPet(dog);
-
-                    } else if (type.equalsIgnoreCase("cat")) {
-                        System.out.print("Enter cat color: ");
-                        String catColor = scanner.nextLine();
-
-                        Cat cat = new Cat(0, name, age, breed, catColor); // petID = 0
-                        shelter.addPet(cat);
-
-                    } else {
-                        System.out.println("🚫 Invalid pet type entered.");
-                    }
-
-
-
-                    System.out.println("✅ Pet added successfully!");
-                    break;
-
-                case 2:
-                    System.out.println("\n Available Pets:");
-                    shelter.listAvailablePets();
-                    break;
-
-                case 3:
-                    System.out.println("\n Adoption is on process...");
-                    shelter.adopt();
-                    break;
-                case 4:
-                    System.out.print("Enter donor name: ");
-                    String donorName = scanner.nextLine();
-
-                    System.out.print("Enter donation amount: ₹");
-                    double amount = scanner.nextDouble();
-                    scanner.nextLine(); // consume newline
-                    if (amount <= 0) {
-                        System.out.println(" Donation amount must be greater than zero.");
-                        break;
-                    }
-
-                    try {
-                        CashDonation donation = new CashDonation(donorName, amount, LocalDate.now());
-                        donation.recordDonation();
-                        
-                        LoggerUtil.logDonation(donorName, amount);
-                    } catch (InsufficientFundsException e) {
-                        System.out.println(e.getMessage());
-                    }
-
-                    break;
-   
-
-                case 5:
-                    System.out.println(" Thank you for visiting kiki's PetPals.");
+                case 1 -> addPet(scanner, shelter);
+                case 2 -> listPets(shelter);
+                case 3 -> shelter.adopt();
+                case 4 -> makeCashDonation(scanner);
+                case 5 -> makeItemDonation(scanner);
+                
+                case 6 -> {
+                    System.out.println("🙏 Thank you for visiting Kiki's PetPals!");
                     exit = true;
-                    break;
-
-                default:
-                    System.out.println("❌ Invalid choice. Please select between 1-5.");
+                }
+                default -> System.out.println("❌ Invalid choice. Please select between 1 and 7.");
             }
         }
 
         scanner.close();
     }
-}
 
+    private static void printMenu() {
+        System.out.println("\n========= MAIN MENU =========");
+        System.out.println("1. Add Pet");
+        System.out.println("2. List Available Pets");
+        System.out.println("3. Adopt a Pet");
+        System.out.println("4. Make a Cash Donation");
+        System.out.println("5. Make an Item Donation");
+       
+        System.out.println("6. Exit");
+        System.out.print("Enter your choice (1-6): ");
+    }
+
+    private static void addPet(Scanner scanner, PetShelter shelter) {
+        System.out.print("Enter pet type (dog/cat): ");
+        String type = scanner.nextLine().trim().toLowerCase();
+
+        String name;
+        while (true) {
+            try {
+                System.out.print("Enter pet name: ");
+                name = scanner.nextLine().trim();
+                if (name.isEmpty()) throw new InvalidPetDataException("❌ Pet name cannot be empty.");
+                break;
+            } catch (InvalidPetDataException e) {
+                System.out.println(e.getMessage());
+            }
+        }
+
+        int age;
+        while (true) {
+            try {
+                System.out.print("Enter pet age (positive number): ");
+                age = Integer.parseInt(scanner.nextLine().trim());
+                if (age <= 0) throw new InvalidPetAgeException("❌ Age must be a positive number.");
+                break;
+            } catch (NumberFormatException e) {
+                System.out.println("❌ Please enter a valid number.");
+            } catch (InvalidPetAgeException e) {
+                System.out.println(e.getMessage());
+            }
+        }
+
+        String breed;
+        while (true) {
+            try {
+                System.out.print("Enter breed: ");
+                breed = scanner.nextLine().trim();
+                if (breed.isEmpty()) throw new InvalidPetDataException("❌ Breed cannot be empty.");
+                break;
+            } catch (InvalidPetDataException e) {
+                System.out.println(e.getMessage());
+            }
+        }
+
+        if (type.equals("dog")) {
+            System.out.print("Enter specific dog breed: ");
+            String dogBreed = scanner.nextLine();
+            Dog dog = new Dog(0, name, age, breed, dogBreed);
+            shelter.addPet(dog);
+
+        } else if (type.equals("cat")) {
+            System.out.print("Enter cat color: ");
+            String catColor = scanner.nextLine();
+            Cat cat = new Cat(0, name, age, breed, catColor);
+            shelter.addPet(cat);
+
+        } else {
+            System.out.println(" Invalid pet type entered.");
+            return;
+        }
+
+        System.out.println("✅ Pet added successfully!");
+    }
+
+    private static void listPets(PetShelter shelter) {
+        System.out.println("\n📋 Available Pets:");
+        shelter.listAvailablePets();
+    }
+
+    private static void makeCashDonation(Scanner scanner) {
+        System.out.print("Enter donor name: ");
+        String donorName = scanner.nextLine();
+
+        System.out.print("Enter donation amount (₹): ");
+        double amount = Double.parseDouble(scanner.nextLine());
+
+        if (amount <= 0) {
+            System.out.println("❌ Donation amount must be greater than zero.");
+            return;
+        }
+
+        try {
+            CashDonation donation = new CashDonation(donorName, amount, LocalDate.now());
+            donation.recordDonation();
+            LoggerUtil.logDonation(donorName, amount);
+            System.out.println("✅ Cash donation recorded successfully!");
+        } catch (InsufficientFundsException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    private static void makeItemDonation(Scanner scanner) {
+        System.out.print("Enter donor name: ");
+        String donorName = scanner.nextLine();
+
+        System.out.print("Enter item donated: ");
+        String item = scanner.nextLine();
+
+        if (item.trim().isEmpty()) {
+            System.out.println("❌ Item name cannot be empty.");
+            return;
+        }
+
+        ItemDonation donation = new ItemDonation(donorName, 0, item);
+        donation.recordDonation();
+        System.out.println("✅ Item donation recorded successfully!");
+    }
+
+    
+    
+}
