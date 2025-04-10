@@ -1,0 +1,350 @@
+package main;
+
+import dao.impl.*;
+import entity.*;
+import exception.*;
+import util.*;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
+
+public class MainModule {
+
+    private static final Scanner scanner = new Scanner(System.in);
+    private static final CustomerDAOImpl customerDAO = new CustomerDAOImpl();
+    private static final AdminDAOImpl adminDAO = new AdminDAOImpl();
+    private static final VehicleDAOImpl vehicleDAO = new VehicleDAOImpl();
+    private static final ReservationDAOImpl reservationDAO = new ReservationDAOImpl();
+
+    public static void main(String[] args) {
+        System.out.println("====== Welcome to KIKI's CarConnect - Car Rental Platform ======");
+
+        while (true) {
+            try {
+                System.out.println("\n1. Login as Customer\n2. Login as Admin\n3. Register as Customer\n4. Register as Admin\n5. Exit");
+                System.out.print("Enter choice: ");
+                int choice = Integer.parseInt(scanner.nextLine());
+
+                switch (choice) {
+                    case 1 -> customerLogin();
+                    case 2 -> adminLogin();
+                    case 3 -> registerCustomer();
+                    case 4 -> registerAdmin();
+                    case 5 -> {
+                        System.out.println("Thank you for using CarConnect!");
+                        System.exit(0);
+                    }
+                    default -> System.out.println("Invalid choice.");
+                }
+
+            } catch (NumberFormatException e) {
+                System.out.println("Please enter a valid number.");
+            }
+        }
+    }
+
+    private static void registerAdmin() {
+        try {
+            System.out.println("\n--- Admin Registration ---");
+
+            String firstName = readNonEmpty("First Name: ");
+            String lastName = readNonEmpty("Last Name: ");
+            String email = readNonEmpty("Email: ");
+            String phoneNumber = readNonEmpty("Phone Number: ");
+            String username = readNonEmpty("Username: ");
+            String password = readNonEmpty("Password: ");
+            String role = "Admin"; // You can also ask for this input if needed
+
+            java.sql.Date joinDate = new java.sql.Date(System.currentTimeMillis());
+
+            Admin newAdmin = new Admin(
+                0,                
+                firstName,
+                lastName,
+                email,
+                phoneNumber,
+                username,
+                password,
+                role,
+                joinDate
+            );
+
+            boolean success = adminDAO.registerAdmin(newAdmin);
+
+            if (success) {
+                System.out.println("Admin registered successfully! You can now log in.");
+            } else {
+                System.out.println("Registration failed. Username might already exist.");
+            }
+        } catch (Exception e) {
+            System.out.println("Registration Error: " + e.getMessage());
+        }
+    }
+
+
+    private static void registerCustomer() {
+        try {
+            System.out.println("\n--- Customer Registration ---");
+
+            String firstName = readNonEmpty("First Name: ");
+            String lastName = readNonEmpty("Last Name: ");
+            String email = readNonEmpty("Email: ");
+            String phoneNumber = readNonEmpty("Phone Number: ");
+            String address = readNonEmpty("Address: ");
+            String username = readNonEmpty("Username: ");
+
+            
+            if (customerDAO.getCustomerByUsername(username) != null) {
+                System.out.println("Username already exists. Please choose a different username.");
+                return;
+            }
+
+            String password = readNonEmpty("Password: ");
+            java.sql.Date registrationDate = new java.sql.Date(System.currentTimeMillis());
+
+            Customer newCustomer = new Customer(
+                0,                 
+                firstName,
+                lastName,
+                email,
+                phoneNumber,
+                address,
+                username,
+                password,
+                registrationDate
+            );
+
+            boolean success = customerDAO.registerCustomer(newCustomer);
+
+            if (success) {
+                System.out.println("Customer registered successfully! You can now log in.");
+            } else {
+                System.out.println("Registration failed. Please try again later.");
+            }
+        } catch (Exception e) {
+            System.out.println("Registration Error: " + e.getMessage());
+        }
+    }
+
+
+
+    private static void customerLogin() {
+        String username = readNonEmpty("Enter Username: ");
+        String password = readNonEmpty("Enter Password: ");
+
+        try {
+            Customer customer = customerDAO.getCustomerByUsername(username);
+            if (customer.authenticate(password)) {
+                System.out.println("Login successful. Welcome, " + customer.getFirstName());
+                customerMenu(customer);
+            } else {
+                throw new AuthenticationException("Invalid credentials.");
+            }
+        } catch (Exception e) {
+            System.out.println("Login failed: " + e.getMessage());
+        }
+    }
+
+    private static void adminLogin() {
+        String username = readNonEmpty("Enter Username: ");
+        String password = readNonEmpty("Enter Password: ");
+
+        try {
+            Admin admin = adminDAO.getAdminByUsername(username);
+            if (admin.authenticate(password)) {
+                System.out.println("Admin Login successful. Welcome, " + admin.getFirstName());
+                adminMenu(admin);
+            } else {
+                throw new AuthenticationException("Invalid credentials.");
+            }
+        } catch (Exception e) {
+            System.out.println("Login failed: " + e.getMessage());
+        }
+    }
+
+    private static void customerMenu(Customer customer) {
+        while (true) {
+            try {
+                System.out.println("\nCustomer Menu:\n1. View Available Vehicles\n2. Make Reservation\n3. View My Reservations\n4. Logout");
+                System.out.print("Enter choice: ");
+                int choice = Integer.parseInt(scanner.nextLine());
+
+                switch (choice) {
+                    case 1 -> vehicleDAO.getAvailableVehicles().forEach(System.out::println);
+                    case 2 -> makeReservation(customer);
+                    case 3 -> reservationDAO.getReservationsByCustomerId(customer.getCustomerID()).forEach(System.out::println);
+                    case 4 -> { return; }
+                    default -> System.out.println("Invalid choice.");
+                }
+            } catch (Exception e) {
+                System.out.println("Error: " + e.getMessage());
+            }
+        }
+    }
+
+    private static void makeReservation(Customer customer) {
+        try {
+            int vehicleId = readInt("Enter Vehicle ID: ");
+            Date startDate = readDate("Enter Start Date (yyyy-MM-dd): ");
+            Date endDate = readDate("Enter End Date (yyyy-MM-dd): ");
+
+            Date today = new Date();
+
+            if (startDate.before(today)) {
+                System.out.println("Start date cannot be in the past.");
+                return;
+            }
+
+            if (endDate.before(startDate)) {
+                System.out.println("End date cannot be before start date.");
+                return;
+            }
+
+            Vehicle vehicle = vehicleDAO.getVehicleById(vehicleId);
+            if (vehicle == null) {
+                System.out.println("Vehicle with ID " + vehicleId + " does not exist.");
+                return;
+            }
+            if (!vehicle.isAvailability()) {
+                System.out.println("Sorry, This vehicle is currently not available for reservation.");
+                return;
+            }
+
+
+            long diffDays = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
+            double totalCost = diffDays * vehicle.getDailyRate();
+
+            Reservation reservation = new Reservation(0, customer.getCustomerID(), vehicleId, startDate, endDate, totalCost, "Confirmed");
+
+            if (reservationDAO.createReservation(reservation)) {
+                System.out.println("Reservation created successfully!");
+                NotificationUtil.sendNotification(customer.getEmail(), "Reservation Confirmed", "Your reservation for vehicle ID " + vehicleId + " is confirmed.");
+                
+                vehicle.setAvailability(false); // Mark vehicle as unavailable
+                vehicleDAO.updateVehicle(vehicle);
+            } else {
+                System.out.println("Failed to create reservation.");
+            }
+
+
+        } catch (Exception e) {
+            System.out.println("Reservation Error: " + e.getMessage());
+        }
+    }
+
+    private static void adminMenu(Admin admin) {
+        while (true) {
+            try {
+                System.out.println("\nAdmin Menu:\n1. Add Vehicle\n2. Update Vehicle\n3. Remove Vehicle\n4. Generate Reports\n5. Logout");
+                System.out.print("Enter choice: ");
+                int choice = Integer.parseInt(scanner.nextLine());
+
+                switch (choice) {
+                    case 1 -> addVehicle();
+                    case 2 -> updateVehicle();
+                    case 3 -> removeVehicle();
+                    case 4 -> ReportGenerator.generateAdminReports(null);
+                    case 5 -> { return; }
+                    default -> System.out.println("Invalid choice.");
+                }
+            } catch (Exception e) {
+                System.out.println("Admin Error: " + e.getMessage());
+            }
+        }
+    }
+
+    private static void addVehicle() {
+        try {
+            String model = readNonEmpty("Model: ");
+            String make = readNonEmpty("Make: ");
+            int year = readInt("Year: ");
+            String color = readNonEmpty("Color: ");
+            String regNo = readNonEmpty("Registration Number: ");
+            boolean available = Boolean.parseBoolean(readNonEmpty("Availability (true/false): "));
+            double rate = readDouble("Daily Rate: ");
+
+            String type = readNonEmpty("Type: ");
+			Vehicle vehicle = new Vehicle(0, model, make, year, color, regNo,type , available, rate);
+            if (vehicleDAO.addVehicle(vehicle)) {
+                System.out.println("Vehicle added successfully.");
+            } else {
+                System.out.println("Failed to add vehicle.");
+            }
+        } catch (Exception e) {
+            System.out.println("Error adding vehicle: " + e.getMessage());
+        }
+    }
+
+    private static void updateVehicle() {
+        try {
+            int id = readInt("Enter Vehicle ID to update: ");
+            Vehicle vehicle = vehicleDAO.getVehicleById(id);
+            if (vehicle == null) {
+                System.out.println("Vehicle not found with ID: " + id);
+                return;
+            }
+
+            boolean available = Boolean.parseBoolean(readNonEmpty("Update Availability (true/false): "));
+            vehicle.setAvailability(available);
+
+            if (vehicleDAO.updateVehicle(vehicle)) {
+                System.out.println("Vehicle updated successfully.");
+            } else {
+                System.out.println("Failed to update vehicle.");
+            }
+        } catch (Exception e) {
+            System.out.println("Update Error: " + e.getMessage());
+        }
+    }
+
+    private static void removeVehicle() {
+        try {
+            int id = readInt("Enter Vehicle ID to remove: ");
+            if (vehicleDAO.removeVehicle(id)) {
+                System.out.println("Vehicle removed successfully.");
+            } else {
+                System.out.println("Failed to remove vehicle.");
+            }
+        } catch (Exception e) {
+            System.out.println("Removal Error: " + e.getMessage());
+        }
+    }
+
+    private static Date readDate(String prompt) throws ParseException {
+        System.out.print(prompt);
+        String dateStr = scanner.nextLine();
+        return new SimpleDateFormat("yyyy-MM-dd").parse(dateStr);
+    }
+
+    private static String readNonEmpty(String prompt) {
+        while (true) {
+            System.out.print(prompt);
+            String input = scanner.nextLine();
+            if (!input.trim().isEmpty()) return input;
+            System.out.println("Input cannot be empty.");
+        }
+    }
+
+    private static int readInt(String prompt) {
+        while (true) {
+            try {
+                System.out.print(prompt);
+                return Integer.parseInt(scanner.nextLine());
+            } catch (NumberFormatException e) {
+                System.out.println("Please enter a valid integer.");
+            }
+        }
+    }
+
+    private static double readDouble(String prompt) {
+        while (true) {
+            try {
+                System.out.print(prompt);
+                return Double.parseDouble(scanner.nextLine());
+            } catch (NumberFormatException e) {
+                System.out.println("Please enter a valid number.");
+            }
+        }
+    }
+}
