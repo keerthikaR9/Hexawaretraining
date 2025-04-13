@@ -1,0 +1,358 @@
+package main;
+
+import dao.*;
+import java.util.List;
+
+import dao.impl.*;
+import entity.*;
+import exception.*;
+
+import java.time.LocalDateTime;
+import java.util.*;
+
+public class MainMenu {
+    private static final Scanner scanner = new Scanner(System.in);
+    private static final CustomerDAO customerDAO = new CustomerDAOImpl();
+    private static final ProductDAO productDAO = new ProductDAOImpl();
+    private static final OrderDAO orderDAO = new OrderDAOImpl();
+    private static final PaymentDAO paymentDAO = new PaymentDAOImpl();
+    private static ReportDAO reportDAO = new ReportDAOImpl(); 
+
+    public static void main(String[] args) {
+        boolean exit = false;
+
+        System.out.println("=== Welcome to Kiki's TechShop ===");
+
+        while (!exit) {
+            System.out.println("\n==== MAIN MENU ====");
+            System.out.println("1. Customer Registration");
+            System.out.println("2. Product Catalog Management");
+            System.out.println("3. Place Customer Order");
+            System.out.println("4. Track Order Status");
+            System.out.println("5. Inventory Management");
+            System.out.println("6. Sales Reporting");
+            System.out.println("7. Customer Account Updates");
+            System.out.println("8. Payment Processing");
+            System.out.println("9. Product Search & Recommendations");
+            System.out.println("0. Exit");
+            System.out.print("Enter your choice: ");
+
+            int choice = scanner.nextInt();
+            scanner.nextLine(); 
+
+            try {
+                switch (choice) {
+                    case 1:
+                        registerCustomer();
+                        break;
+                    case 2:
+                        manageProductCatalog();
+                        break;
+                    case 3:
+                        placeOrder();
+                        break;
+                    case 4:
+                        trackOrderStatus();
+                        break;
+                    case 5:
+                        manageInventory();
+                        break;
+                    case 6:
+                        generateSalesReport();
+                        break;
+                    case 7:
+                        updateCustomerAccount();
+                        break;
+                    case 8:
+                        processPayment();
+                        break;
+                    case 9:
+                        searchAndRecommendProducts();
+                        break;
+                    case 0:
+                        exit = true;
+                        System.out.println(" Exiting Kiki's TechShop. Thank you!");
+                        break;
+                    default:
+                        System.out.println(" Invalid choice. Please try again.");
+                }
+            } catch (Exception e) {
+                System.out.println("❌ Error: " + e.getMessage());
+            }
+        }
+
+        scanner.close();
+    }
+
+    // -------------------------
+    // 1. Customer Registration
+    // -------------------------
+    private static void registerCustomer() {
+        System.out.println("\n== Customer Registration ==");
+        System.out.print("Enter Customer ID: ");
+        int customerID = scanner.nextInt();
+        scanner.nextLine(); 
+
+        System.out.print("Enter First Name: ");
+        String firstName = scanner.nextLine();
+
+        System.out.print("Enter Last Name: ");
+        String lastName = scanner.nextLine();
+
+
+        System.out.print("Enter Email: ");
+        String email = scanner.nextLine();
+
+        System.out.print("Enter Phone: ");
+        String phone = scanner.nextLine();
+     
+
+        System.out.print("Enter Address: ");
+        String address = scanner.nextLine();
+
+        try {
+            Customer customer = new Customer(customerID,firstName,lastName, email, phone,address);
+            customerDAO.addCustomer(customer);
+            System.out.println("✅ Customer registered successfully.");
+        } catch (InvalidDataException | DatabaseConnectionException e) {
+            System.out.println("❌ Registration failed: " + e.getMessage());
+        }
+    }
+
+    // -------------------------
+    // 2. Product Catalog Management
+    // -------------------------
+    private static void manageProductCatalog() {
+        System.out.println("\n== Product Catalog Management ==");
+
+        System.out.print("Enter Product ID to update: ");
+        int productId = scanner.nextInt();
+        scanner.nextLine(); // consume newline
+
+        System.out.print("Enter new Product Name: ");
+        String productName = scanner.nextLine();
+
+        System.out.print("Enter new Product Price: ");
+        double price = scanner.nextDouble();
+        scanner.nextLine(); // consume newline
+
+        System.out.print("Enter new Product Description: ");
+        String description = scanner.nextLine();
+        
+        System.out.print("Enter Category: ");
+        String category = scanner.nextLine();
+
+        try {
+            Product product = new Product(productId, productName, description, price,category);
+            try {
+				productDAO.updateProduct(product);
+			} catch (InvalidDataException e) {
+				
+				e.printStackTrace();
+			}
+            System.out.println("✅ Product updated successfully.");
+        } catch (DatabaseConnectionException e) {
+            System.out.println("❌ Product update failed: " + e.getMessage());
+        }
+    }
+
+    // -------------------------
+    // 3. Place Customer Order
+    // -------------------------
+    private static void placeOrder() {
+        System.out.println("\n== Place Customer Order ==");
+
+        System.out.print("Enter Customer ID: ");
+        int customerId = scanner.nextInt();
+        scanner.nextLine(); // consume newline
+
+        System.out.print("Enter Product ID to order: ");
+        int productId = scanner.nextInt();
+        scanner.nextLine(); // consume newline
+
+        System.out.print("Enter Quantity: ");
+        int quantity = scanner.nextInt();
+        scanner.nextLine(); // consume newline
+
+        try {
+            // Fetch product details
+            Product product = productDAO.getProductById(productId);
+            if (product == null) {
+                System.out.println("❌ Product not found.");
+                return;
+            }
+
+            // Calculate order details
+            double price = product.getPrice();
+            double totalAmount = price * quantity;
+            LocalDateTime orderDate = LocalDateTime.now();
+            String status = "Placed";
+
+            // Create order object (Assume orderID = 0 for auto-generation)
+            Order order = new Order(0, customerId, orderDate, totalAmount, status);
+
+            // Add order to database
+            orderDAO.addOrder(order);
+
+            
+
+            System.out.println("✅ Order placed successfully. Total: ₹" + totalAmount);
+
+        } catch (DatabaseConnectionException | OrderProcessingException e) {
+            System.out.println("❌ Failed to place order: " + e.getMessage());
+        }
+    }
+
+
+    // -------------------------
+    // 4. Track Order Status
+    // -------------------------
+    private static void trackOrderStatus() {
+        System.out.println("\n== Track Order Status ==");
+
+        System.out.print("Enter Order ID: ");
+        int orderId = scanner.nextInt();
+        scanner.nextLine(); // consume newline
+
+        try {
+            String status = orderDAO.getOrderStatus(orderId); 
+            if (status != null) {
+                System.out.println("📦 Order Status: " + status);
+            } else {
+                System.out.println("❌ No order found with ID " + orderId);
+            }
+        }  catch (DatabaseConnectionException e) {
+            System.out.println("❌ Could not retrieve order status: " + e.getMessage());
+        }
+    }
+
+    // -------------------------
+    // 5. Inventory Management
+    // -------------------------
+    private static void manageInventory() {
+        System.out.println("\n== Inventory Management ==");
+
+        System.out.print("Enter Product ID to update inventory: ");
+        int productId = scanner.nextInt();
+        scanner.nextLine(); // consume newline
+
+        System.out.print("Enter new Quantity: ");
+        int quantity = scanner.nextInt();
+        scanner.nextLine(); // consume newline
+
+        try {
+            productDAO.updateInventory(productId, quantity);
+            System.out.println("✅ Inventory updated successfully.");
+        } catch (DatabaseConnectionException | InsufficientStockException e) {
+            System.out.println("❌ Inventory update failed: " + e.getMessage());
+        }
+    }
+
+    // -------------------------
+    // 6. Sales Reporting
+    // -------------------------
+    private static void generateSalesReport() {
+        System.out.println("\n== Sales Reporting ==");
+        System.out.print("Enter start date (yyyy-mm-dd): ");
+        String startDate = scanner.nextLine();
+
+        System.out.print("Enter end date (yyyy-mm-dd): ");
+        String endDate = scanner.nextLine();
+
+        try {
+            List<Sale> salesReport = reportDAO.generateSalesReport(startDate, endDate);
+            salesReport.forEach(sale -> System.out.println(sale));
+        } catch (DatabaseConnectionException e) {
+            System.out.println("❌ Sales report generation failed: " + e.getMessage());
+        }
+    }
+
+ // -------------------------
+ // 7. Customer Account Updates
+ // -------------------------
+ private static void updateCustomerAccount() {
+     System.out.println("\n== Customer Account Update ==");
+
+     System.out.print("Enter Customer ID to update: ");
+     int customerId = scanner.nextInt();
+     scanner.nextLine(); // consume newline
+
+     System.out.print("Enter new Email: ");
+     String email = scanner.nextLine();
+
+     System.out.print("Enter new Phone: ");
+     String phone = scanner.nextLine();
+
+     try {
+    	    Customer customer = new Customer();
+    	    customer.setCustomerID(customerId);
+    	    customer.setEmail(email);
+    	    customer.setPhone(phone);
+
+    	    customerDAO.updateCustomer(customer);
+
+    	    System.out.println("✅ Customer account updated successfully.");
+    	} catch (DatabaseConnectionException | InvalidDataException e) {
+    	    System.out.println("❌ Account update failed: " + e.getMessage());
+    	}
+
+ }
+
+
+    // -------------------------
+    // 8. Payment Processing
+    // -------------------------
+    private static void processPayment() {
+        System.out.println("\n== Payment Processing ==");
+
+        System.out.print("Enter Order ID: ");
+        int orderId = scanner.nextInt();
+        scanner.nextLine(); // consume newline
+
+        System.out.print("Enter Payment Method (Credit/Debit): ");
+        String paymentMethod = scanner.nextLine();
+
+        System.out.print("Enter Amount: ");
+        double amount = scanner.nextDouble();
+        scanner.nextLine(); // consume newline
+
+        try {
+            Payment payment = new Payment(orderId, paymentMethod, amount);
+            paymentDAO.processPayment(payment);
+            System.out.println("✅ Payment processed successfully.");
+        } catch (InvalidDataException e) {
+            System.out.println("❌ Invalid payment data: " + e.getMessage());
+        } catch (DatabaseConnectionException e) {
+            System.out.println("❌ Payment processing failed: " + e.getMessage());
+        }
+
+    }
+
+    // -------------------------
+    // 9. Product Search & Recommendations
+    // -------------------------
+    private static void searchAndRecommendProducts() {
+        System.out.println("\n== Product Search & Recommendations ==");
+
+        System.out.print("Enter Product Name or Category to search: ");
+        String query = scanner.nextLine();
+
+        try {
+            List<Product> nameMatches = productDAO.searchProductsByName(query);
+            List<Product> categoryMatches = productDAO.searchProductsByCategory(query);
+
+            Set<Product> allResults = new HashSet<>();
+            allResults.addAll(nameMatches);
+            allResults.addAll(categoryMatches);
+
+            if (allResults.isEmpty()) {
+                System.out.println("❌ No products found for: " + query);
+            } else {
+                allResults.forEach(product -> System.out.println(product));
+            }
+        } catch (DatabaseConnectionException e) {
+            System.out.println("❌ Product search failed: " + e.getMessage());
+        }
+    }
+
+}
